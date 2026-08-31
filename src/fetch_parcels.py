@@ -42,7 +42,12 @@ def fetch_parcel_universe(zip_codes):
     offset = 0
     while True:
         params = {
-            "$select": "pin,zip_code,township_name,lat,lon,x_3435,y_3435",
+            "$select": (
+                "pin,zip_code,township_name,lat,lon,x_3435,y_3435,class,"
+                "nbhd_code,chicago_community_area_name,access_cmap_walk_total_score,"
+                "school_elementary_district_name,school_secondary_district_name,"
+                "env_flood_fema_sfha"
+            ),
             "$where": where,
             "$order": "pin",  # keeps pagination deterministic across requests
             "$limit": PAGE_SIZE,
@@ -68,6 +73,7 @@ def load_parcels(rows):
         if not all(r.get(f) for f in required):
             skipped += 1
             continue
+        walk_score = r.get("access_cmap_walk_total_score")
         values.append(
             (
                 r["pin"],
@@ -77,6 +83,13 @@ def load_parcels(rows):
                 float(r["lon"]),
                 float(r["x_3435"]),
                 float(r["y_3435"]),
+                r.get("class"),
+                r.get("nbhd_code"),
+                r.get("chicago_community_area_name"),
+                float(walk_score) if walk_score else None,
+                r.get("school_elementary_district_name"),
+                r.get("school_secondary_district_name"),
+                bool(r.get("env_flood_fema_sfha")),
             )
         )
 
@@ -87,7 +100,11 @@ def load_parcels(rows):
         execute_values(
             cur,
             """
-            insert into parcels (pin, zip_code, township_name, lat, lon, x_3435, y_3435)
+            insert into parcels (
+                pin, zip_code, township_name, lat, lon, x_3435, y_3435,
+                class, nbhd_code, community_area, walk_score,
+                school_elementary_district, school_secondary_district, in_flood_zone
+            )
             values %s
             on conflict (pin) do update set
                 zip_code = excluded.zip_code,
@@ -95,7 +112,14 @@ def load_parcels(rows):
                 lat = excluded.lat,
                 lon = excluded.lon,
                 x_3435 = excluded.x_3435,
-                y_3435 = excluded.y_3435
+                y_3435 = excluded.y_3435,
+                class = excluded.class,
+                nbhd_code = excluded.nbhd_code,
+                community_area = excluded.community_area,
+                walk_score = excluded.walk_score,
+                school_elementary_district = excluded.school_elementary_district,
+                school_secondary_district = excluded.school_secondary_district,
+                in_flood_zone = excluded.in_flood_zone
             """,
             values,
         )
