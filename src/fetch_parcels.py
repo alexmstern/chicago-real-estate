@@ -65,7 +65,7 @@ def fetch_parcel_universe(zip_codes):
 
 
 def load_parcels(rows):
-    """Upsert rows into `parcels`, keyed on pin, skipping PINs with missing coordinates."""
+    """Upsert rows into `parcels`, keyed on pin, skipping pins with missing coordinates."""
     required = ("lat", "lon", "x_3435", "y_3435")
     values = []
     skipped = 0

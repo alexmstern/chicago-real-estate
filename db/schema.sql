@@ -42,3 +42,19 @@ create table if not exists sales (
 
 create index if not exists sales_pin_idx on sales (pin);
 create index if not exists sales_date_idx on sales (sale_date);
+
+-- characteristics table definition
+create table if not exists characteristics (
+    pin text primary key references parcels(pin),
+    class text,
+    year_built integer,
+    sqft integer,
+    bedrooms integer,
+    full_baths integer,
+    half_baths integer,
+    is_parking_space boolean,
+    is_common_area boolean,
+    building_sf integer,
+    building_unit_count integer,
+    inserted_at timestamptz not null default now()
+);
